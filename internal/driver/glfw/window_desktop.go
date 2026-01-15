@@ -23,7 +23,6 @@ import (
 	"fyne.io/fyne/v2/internal/painter/gl"
 	"fyne.io/fyne/v2/internal/scale"
 	"fyne.io/fyne/v2/internal/svg"
-	"fyne.io/fyne/v2/storage"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -145,12 +144,7 @@ func (w *window) SetOnDropped(dropped func(pos fyne.Position, items []fyne.URI))
 				return
 			}
 
-			uris := make([]fyne.URI, len(names))
-			for i, name := range names {
-				uris[i] = storage.NewFileURI(name)
-			}
-
-			dropped(w.mousePos, uris)
+			dropped(w.mousePos, w.handleDrop(names))
 		})
 	})
 }
