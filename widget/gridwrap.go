@@ -25,6 +25,21 @@ var (
 // Since: 2.4
 type GridWrapItemID = int
 
+// GridWrapStretch defines how GridWrap items should stretch to fill the available width.
+//
+// Since: 2.8
+type GridWrapStretch int
+
+const (
+	// GridWrapStretchNone indicates that items should not be stretched.
+	GridWrapStretchNone GridWrapStretch = iota
+	// GridWrapStretchHorizontal indicates that items should be stretched horizontally.
+	GridWrapStretchHorizontal
+	// GridWrapStretchBoth indicates that items should be stretched horizontally and vertically
+	// to maintain the aspect ratio.
+	GridWrapStretchBoth
+)
+
 // GridWrap is a widget with an API very similar to widget.List,
 // that lays out items in a scrollable wrapping grid similar to container.NewGridWrap.
 // It caches and reuses widgets for performance.
@@ -60,12 +75,12 @@ type GridWrap struct {
 	// Since: 2.8
 	OnHighlighted func(id GridWrapItemID) `json:"-"`
 
-	// StretchItems, when true, stretches items horizontally to fill the
+	// StretchItems, when set, stretches items to fill the
 	// available width evenly across columns. This avoids gaps on the right
 	// side when the viewport width doesn't divide evenly by item width.
 	//
 	// Since: 2.8
-	StretchItems bool
+	StretchItems GridWrapStretch
 
 	currentHighlight ListItemID
 	focused          bool
@@ -652,11 +667,16 @@ func (l *gridWrapLayout) updateGrid(newOnly bool) {
 	// to fill the available width evenly across columns. This is calculated here
 	// at layout time to avoid feedback loops from having MinSize depend on viewport.
 	itemSize := l.gw.itemMin
-	if l.gw.StretchItems && colCount > 0 {
+	if l.gw.StretchItems != GridWrapStretchNone && colCount > 0 {
 		viewportWidth := l.gw.scroller.Size().Width
 		stretchedWidth := (viewportWidth - float32(colCount-1)*padding) / float32(colCount)
 		if stretchedWidth > l.gw.itemMin.Width {
-			itemSize = fyne.NewSize(stretchedWidth, l.gw.itemMin.Height)
+			if l.gw.StretchItems == GridWrapStretchBoth {
+				aspect := l.gw.itemMin.Width / l.gw.itemMin.Height
+				itemSize = fyne.NewSize(stretchedWidth, stretchedWidth/aspect)
+			} else {
+				itemSize = fyne.NewSize(stretchedWidth, l.gw.itemMin.Height)
+			}
 		}
 	}
 	stepX := itemSize.Width + padding
